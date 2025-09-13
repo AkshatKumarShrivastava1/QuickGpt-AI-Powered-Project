@@ -71,7 +71,10 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-axios.defaults.baseURL = '/api'; // frontend proxy
+// Use deployed backend in production, localhost in dev
+axios.defaults.baseURL =
+  import.meta.env.VITE_API_URL || "https://quick-gpt-server-ashen.vercel.app/api";
+axios.defaults.withCredentials = true; // important if you use cookies
 
 const AppContext = createContext();
 
@@ -143,37 +146,33 @@ export const AppContextProvider = ({ children }) => {
   };
 
   const createNewChat = async () => {
-  if (!user) return toast("Login to create new chat");
+    if (!user) return toast("Login to create new chat");
 
-  try {
-    // Create a new chat on the backend
-    const { data } = await axios.get("/chat/create", {
-      headers: { Authorization: `Bearer ${token}` }, // send proper token
-    });
-
-    if (data.success) {
-      // Fetch all chats again from backend to get the updated list
-      const { data: chatsData } = await axios.get("/chat/get", {
+    try {
+      const { data } = await axios.get("/chat/create", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (chatsData.success) {
-        setChats(chatsData.chats);
-        setSelectedChat(chatsData.chats[0]); // select first chat
+      if (data.success) {
+        const { data: chatsData } = await axios.get("/chat/get", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (chatsData.success) {
+          setChats(chatsData.chats);
+          setSelectedChat(chatsData.chats[0]);
+        }
+
+        toast.success("New chat created!");
+      } else {
+        toast.error(data.message);
       }
-
-      toast.success("New chat created!");
-    } else {
-      toast.error(data.message);
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
     }
-  } catch (error) {
-    toast.error(error.response?.data?.message || error.message);
-  }
-};
-
+  };
 
   // ----------------------- EFFECTS -----------------------
-  // Fetch chats when user changes
   useEffect(() => {
     if (user) fetchUsersChats();
     else {
@@ -207,4 +206,6 @@ export const AppContextProvider = ({ children }) => {
 };
 
 export const useAppContext = () => useContext(AppContext);
+
+
 
