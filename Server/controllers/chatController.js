@@ -27,14 +27,32 @@ export const createChat = async (req, res) => {
 };
 
 // API Controller for getting all chat
+// export const getChat = async (req, res) => {
+//   try {
+//     const userId = req.user._id; // assuming req.user is set by auth middleware
+//     const chats = await Chat.find({userId}).sort({updatedAt:-1})
+
+//     res.json({
+//       success: true,
+//       message: chats,
+//     });
+//   } catch (error) {
+//     res.json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+// API Controller for getting all chats
 export const getChat = async (req, res) => {
   try {
     const userId = req.user._id; // assuming req.user is set by auth middleware
-    const chats = await Chat.find({userId}).sort({updatedAt:-1})
+    const chats = await Chat.find({ userId }).sort({ updatedAt: -1 });
 
     res.json({
       success: true,
-      message: chats,
+      chats,   // ✅ correct field name
     });
   } catch (error) {
     res.json({
@@ -43,6 +61,7 @@ export const getChat = async (req, res) => {
     });
   }
 };
+
 
 // API Controller for deleting chat
 export const deleteChat = async (req, res) => {
