@@ -318,10 +318,10 @@ const Credits = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Use token from context or fallback to localStorage
+  // Always fallback to localStorage token
   const token = contextToken || localStorage.getItem("token");
 
-  // Fetch all plans
+  // Fetch all credit plans
   const fetchPlans = async () => {
     if (!token) return;
     setLoading(true);
@@ -341,30 +341,17 @@ const Credits = () => {
   // Purchase a plan
   const purchasePlan = async (planId) => {
     try {
-      const { data } = await axios.post('/credit/purchase', { planId }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (data.success) {
-        // Save token in localStorage in case of redirect
-        if (contextToken) localStorage.setItem("token", contextToken);
-        window.location.href = data.url;
-      } else toast.error(data.message);
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
-    }
-  };
-
-  // Confirm payment after Stripe redirect
-  const confirmPayment = async (sessionId) => {
-    try {
       const { data } = await axios.post(
-        '/credit/confirm',
-        { sessionId }
+        '/credit/purchase',
+        { planId },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (data.success) {
-        toast.success("Payment successful! Credits added.");
-        setUser(prev => ({ ...prev, credits: prev.credits + data.newCredits }));
-        navigate("/credits"); // clean URL
+        // Save token to localStorage in case of redirect
+        if (contextToken) localStorage.setItem("token", contextToken);
+
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
       } else {
         toast.error(data.message);
       }
@@ -373,11 +360,35 @@ const Credits = () => {
     }
   };
 
+  // Confirm payment if redirected from Stripe
+  const confirmPayment = async (sessionId) => {
+    try {
+      const { data } = await axios.post(
+        '/credit/confirm',
+        { sessionId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (data.success) {
+        toast.success("Payment successful! Credits added.");
+        setUser(prev => ({ ...prev, credits: data.newCredits }));
+        navigate("/credits"); // Clean URL after confirmation
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
+    }
+  };
+
+  // On mount
   useEffect(() => {
     fetchPlans();
 
+    // Check for Stripe session_id in URL
     const sessionId = searchParams.get("session_id");
-    if (sessionId) confirmPayment(sessionId);
+    if (sessionId && token) {
+      confirmPayment(sessionId);
+    }
   }, [token]);
 
   if (loading) return <Loading />;
@@ -393,11 +404,11 @@ const Credits = () => {
             <div className="flex-1">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
               <p className="text-2xl font-bold text-purple-600 dark:text-purple-300 mb-4">
-                ${plan.price} 
+                ${plan.price}
                 <span className="text-base font-normal text-gray-600 dark:text-purple-200"> / {plan.credits} credits</span>
               </p>
               <ul className="list-disc list-inside text-gray-700 text-sm dark:text-purple-200 space-y-1">
-                {plan.features.map((f, idx) => <li key={idx}>{f}</li>)}
+                {plan.features.map((feature, idx) => <li key={idx}>{feature}</li>)}
               </ul>
             </div>
             <button
@@ -414,6 +425,7 @@ const Credits = () => {
 };
 
 export default Credits;
+
 
 
 
