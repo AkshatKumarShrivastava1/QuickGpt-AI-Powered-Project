@@ -314,20 +314,20 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 const Credits = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { token: contextToken, axios, setUser } = useAppContext();
+  const { axios, contextToken, setUser } = useAppContext();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   // Always fallback to localStorage token
-  const token = contextToken || localStorage.getItem("token");
+  const token = contextToken || localStorage.getItem('token');
 
   // Fetch all credit plans
-  const fetchPlans = async () => {
-    if (!token) return;
+  const fetchPlans = async (authToken) => {
+    if (!authToken) return;
     setLoading(true);
     try {
       const { data } = await axios.get('/credit/plan', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${authToken}` }
       });
       if (data.success) setPlans(data.plans);
       else toast.error(data.message);
@@ -340,6 +340,7 @@ const Credits = () => {
 
   // Purchase a plan
   const purchasePlan = async (planId) => {
+    if (!token) return toast.error("You must be logged in to purchase");
     try {
       const { data } = await axios.post(
         '/credit/purchase',
@@ -347,11 +348,9 @@ const Credits = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (data.success) {
-        // Save token to localStorage in case of redirect
-        if (contextToken) localStorage.setItem("token", contextToken);
-
-        // Redirect to Stripe checkout
-        window.location.href = data.url;
+        // Save token to localStorage in case Stripe redirects
+        localStorage.setItem('token', token);
+        window.location.href = data.url; // redirect to Stripe checkout
       } else {
         toast.error(data.message);
       }
@@ -360,18 +359,18 @@ const Credits = () => {
     }
   };
 
-  // Confirm payment if redirected from Stripe
-  const confirmPayment = async (sessionId) => {
+  // Confirm payment after Stripe redirect
+  const confirmPayment = async (sessionId, authToken) => {
     try {
       const { data } = await axios.post(
         'https://quick-gpt-server-ashen.vercel.app/api/credit/confirm',
         { sessionId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${authToken}` } }
       );
       if (data.success) {
-        toast.success("Payment successful! Credits added.");
+        toast.success('Payment successful! Credits added.');
         setUser(prev => ({ ...prev, credits: data.newCredits }));
-        navigate("/credits"); // Clean URL after confirmation
+        navigate('/credits'); // clean URL
       } else {
         toast.error(data.message);
       }
@@ -380,14 +379,13 @@ const Credits = () => {
     }
   };
 
-  // On mount
   useEffect(() => {
-    fetchPlans();
+    fetchPlans(token);
 
     // Check for Stripe session_id in URL
-    const sessionId = searchParams.get("session_id");
+    const sessionId = searchParams.get('session_id');
     if (sessionId && token) {
-      confirmPayment(sessionId);
+      confirmPayment(sessionId, token);
     }
   }, [token]);
 
@@ -400,7 +398,10 @@ const Credits = () => {
       </h2>
       <div className="flex flex-wrap justify-center gap-8">
         {plans.map(plan => (
-          <div key={plan._id} className={`border border-gray-200 dark:border-purple-700 rounded-lg shadow hover:shadow-lg transition-shadow p-6 min-w-[300px] flex flex-col ${plan._id === 'pro' ? 'bg-purple-50 dark:bg-purple-900' : 'bg-white dark:bg-transparent'}`}>
+          <div
+            key={plan._id}
+            className={`border border-gray-200 dark:border-purple-700 rounded-lg shadow hover:shadow-lg transition-shadow p-6 min-w-[300px] flex flex-col ${plan._id === 'pro' ? 'bg-purple-50 dark:bg-purple-900' : 'bg-white dark:bg-transparent'}`}
+          >
             <div className="flex-1">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
               <p className="text-2xl font-bold text-purple-600 dark:text-purple-300 mb-4">
@@ -425,6 +426,7 @@ const Credits = () => {
 };
 
 export default Credits;
+
 
 
 
