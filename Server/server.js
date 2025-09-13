@@ -201,7 +201,7 @@ app.post(
 );
 
 // CORS Middleware
-const FRONTEND_URL = process.env.CLIENT_URL || "http://localhost:5173";
+const FRONTEND_URL = process.env.CLIENT_URL;
 app.use(cors({
   origin: FRONTEND_URL,
   credentials: true,
@@ -244,4 +244,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
 
