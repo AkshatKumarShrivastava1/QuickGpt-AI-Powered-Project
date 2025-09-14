@@ -177,6 +177,111 @@
 
 // export default Login;
 
+// import React, { useState } from 'react';
+// import { useAppContext } from '../context/AppContext';
+// import toast from 'react-hot-toast';
+
+// const Login = () => {
+//   const [state, setState] = useState("login");
+//   const [name, setName] = useState("");
+//   const [email, setEmail] = useState("");
+//   const [password, setPassword] = useState("");
+//   const { axios, setToken, fetchUser } = useAppContext();
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     // ✅ Use proxy path, no hardcoded localhost
+//     const url = state === "login" ? '/user/login' : '/user/register';
+
+//     try {
+//       const { data } = await axios.post(url, { name, email, password });
+//       if (data.success) {
+//         setToken(data.token);
+//         localStorage.setItem('token', data.token);
+//         await fetchUser(data.token); // wait for user fetch
+//         console.log("Token received from backend:", data.token);
+//       } else {
+//         toast.error(data.message);
+//       }
+//     } catch (error) {
+//       toast.error(error.response?.data?.message || error.message);
+//     }
+//   };
+
+//   return (
+//     <form onSubmit={handleSubmit} className="flex flex-col gap-4 m-auto items-start p-8 py-12 w-80 sm:w-[352px] text-gray-500 rounded-lg shadow-xl border border-gray-200 bg-white">
+//       <p className="text-2xl font-medium m-auto">
+//         <span className="text-purple-700">User</span> {state === "login" ? "Login" : "Sign Up"}
+//       </p>
+
+//       {state === "register" && (
+//         <div className="w-full">
+//           <p>Name</p>
+//           <input
+//             onChange={(e) => setName(e.target.value)}
+//             value={name}
+//             placeholder="type here"
+//             className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700"
+//             type="text"
+//             required
+//           />
+//         </div>
+//       )}
+
+//       <div className="w-full">
+//         <p>Email</p>
+//         <input
+//           onChange={(e) => setEmail(e.target.value)}
+//           value={email}
+//           placeholder="type here"
+//           className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700"
+//           type="email"
+//           required
+//         />
+//       </div>
+
+//       <div className="w-full">
+//         <p>Password</p>
+//         <input
+//           onChange={(e) => setPassword(e.target.value)}
+//           value={password}
+//           placeholder="type here"
+//           className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700"
+//           type="password"
+//           required
+//         />
+//       </div>
+
+//       {state === "register" ? (
+//         <p>
+//           Already have account?{" "}
+//           <span onClick={() => setState("login")} className="text-purple-700 cursor-pointer">
+//             click here
+//           </span>
+//         </p>
+//       ) : (
+//         <p>
+//           Create an account?{" "}
+//           <span onClick={() => setState("register")} className="text-purple-700 cursor-pointer">
+//             click here
+//           </span>
+//         </p>
+//       )}
+
+//       <button
+//         type="submit"
+//         className="bg-purple-700 hover:bg-purple-800 transition-all text-white w-full py-2 rounded-md cursor-pointer"
+//       >
+//         {state === "register" ? "Create Account" : "Login"}
+//       </button>
+//     </form>
+//   );
+// };
+
+// export default Login;
+
+
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
@@ -186,12 +291,16 @@ const Login = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  // ✅ 1. Add loading state
+  const [loading, setLoading] = useState(false);
+
   const { axios, setToken, fetchUser } = useAppContext();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // ✅ Start loading
 
-    // ✅ Use proxy path, no hardcoded localhost
     const url = state === "login" ? '/user/login' : '/user/register';
 
     try {
@@ -199,13 +308,15 @@ const Login = () => {
       if (data.success) {
         setToken(data.token);
         localStorage.setItem('token', data.token);
-        await fetchUser(data.token); // wait for user fetch
-        console.log("Token received from backend:", data.token);
+        await fetchUser(data.token);
+        toast.success(`Successfully ${state === 'login' ? 'logged in' : 'registered'}!`);
       } else {
         toast.error(data.message);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
+    } finally {
+      setLoading(false); // ✅ Stop loading in the 'finally' block
     }
   };
 
@@ -221,7 +332,7 @@ const Login = () => {
           <input
             onChange={(e) => setName(e.target.value)}
             value={name}
-            placeholder="type here"
+            placeholder="Type here" // ✅ Capitalized placeholder
             className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700"
             type="text"
             required
@@ -234,7 +345,7 @@ const Login = () => {
         <input
           onChange={(e) => setEmail(e.target.value)}
           value={email}
-          placeholder="type here"
+          placeholder="Type here" // ✅ Capitalized placeholder
           className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700"
           type="email"
           required
@@ -246,7 +357,7 @@ const Login = () => {
         <input
           onChange={(e) => setPassword(e.target.value)}
           value={password}
-          placeholder="type here"
+          placeholder="Type here" // ✅ Capitalized placeholder
           className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700"
           type="password"
           required
@@ -255,7 +366,7 @@ const Login = () => {
 
       {state === "register" ? (
         <p>
-          Already have account?{" "}
+          Already have an account?{" "}
           <span onClick={() => setState("login")} className="text-purple-700 cursor-pointer">
             click here
           </span>
@@ -269,14 +380,17 @@ const Login = () => {
         </p>
       )}
 
+      {/* ✅ 3. Update button to reflect loading state */}
       <button
         type="submit"
-        className="bg-purple-700 hover:bg-purple-800 transition-all text-white w-full py-2 rounded-md cursor-pointer"
+        className="bg-purple-700 hover:bg-purple-800 transition-all text-white w-full py-2 rounded-md cursor-pointer disabled:bg-purple-400 disabled:cursor-not-allowed"
+        disabled={loading}
       >
-        {state === "register" ? "Create Account" : "Login"}
+        {loading ? 'Processing...' : (state === "register" ? "Create Account" : "Login")}
       </button>
     </form>
   );
 };
 
 export default Login;
+
