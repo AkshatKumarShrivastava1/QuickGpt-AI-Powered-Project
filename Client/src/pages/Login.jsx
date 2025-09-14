@@ -281,7 +281,6 @@
 
 // export default Login;
 
-
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
@@ -292,7 +291,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   
-  // ✅ 1. Add loading state
+  // ✅ 1. Add a new loading state
   const [loading, setLoading] = useState(false);
 
   const { axios, setToken, fetchUser } = useAppContext();
@@ -316,13 +315,13 @@ const Login = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
     } finally {
-      setLoading(false); // ✅ Stop loading in the 'finally' block
+      setLoading(false); // ✅ Stop loading, no matter the result
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 m-auto items-start p-8 py-12 w-80 sm:w-[352px] text-gray-500 rounded-lg shadow-xl border border-gray-200 bg-white">
-      <p className="text-2xl font-medium m-auto">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 m-auto items-start p-8 py-12 w-80 sm:w-[352px] text-gray-500 rounded-lg shadow-xl border border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
+      <p className="text-2xl font-medium m-auto dark:text-white">
         <span className="text-purple-700">User</span> {state === "login" ? "Login" : "Sign Up"}
       </p>
 
@@ -333,7 +332,7 @@ const Login = () => {
             onChange={(e) => setName(e.target.value)}
             value={name}
             placeholder="Type here" // ✅ Capitalized placeholder
-            className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700"
+            className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             type="text"
             required
           />
@@ -346,7 +345,7 @@ const Login = () => {
           onChange={(e) => setEmail(e.target.value)}
           value={email}
           placeholder="Type here" // ✅ Capitalized placeholder
-          className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700"
+          className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           type="email"
           required
         />
@@ -358,7 +357,7 @@ const Login = () => {
           onChange={(e) => setPassword(e.target.value)}
           value={password}
           placeholder="Type here" // ✅ Capitalized placeholder
-          className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700"
+          className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           type="password"
           required
         />
@@ -380,7 +379,7 @@ const Login = () => {
         </p>
       )}
 
-      {/* ✅ 3. Update button to reflect loading state */}
+      {/* ✅ 3. Update the button to show loading state */}
       <button
         type="submit"
         className="bg-purple-700 hover:bg-purple-800 transition-all text-white w-full py-2 rounded-md cursor-pointer disabled:bg-purple-400 disabled:cursor-not-allowed"
@@ -393,4 +392,6 @@ const Login = () => {
 };
 
 export default Login;
+
+
 
