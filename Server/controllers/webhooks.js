@@ -184,86 +184,127 @@
 // };
 
 // controllers/webhooks.js
-import Stripe from "stripe";
-import Transaction from "../models/Transaction.js";
-import User from "../models/User.js";
+// import Stripe from "stripe";
+// import Transaction from "../models/Transaction.js";
+// import User from "../models/User.js";
 
+// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// export const stripeWebhooks = async (req, res) => {
+//   const sig = req.headers["stripe-signature"];
+
+//   let event;
+//   try {
+//     event = stripe.webhooks.constructEvent(
+//       req.body, // raw body
+//       sig,
+//       process.env.STRIPE_WEBHOOK_SECRET
+//     );
+//   } catch (err) {
+//     console.error("❌ Webhook signature verification failed:", err.message);
+//     return res.status(400).send(`Webhook Error: ${err.message}`);
+//   }
+
+//   if (event.type === "checkout.session.completed") {
+//     const session = event.data.object;
+
+//     console.log("🔔 Checkout session completed:", session.id);
+
+//     // ✅ Refetch full session to ensure metadata is included
+//     let fullSession;
+//     try {
+//       fullSession = await stripe.checkout.sessions.retrieve(session.id, {
+//         expand: ["line_items"],
+//       });
+//     } catch (err) {
+//       console.error("❌ Failed to retrieve full session:", err.message);
+//       return res.json({ received: true });
+//     }
+
+//     console.log("📦 Metadata received in webhook:", fullSession.metadata);
+
+//     const { transactionId, userId } = fullSession.metadata || {};
+
+//     if (!transactionId || !userId) {
+//       console.error("❌ Missing transactionId or userId in metadata");
+//       return res.json({ received: true });
+//     }
+
+//     try {
+//       const transaction = await Transaction.findById(transactionId);
+//       if (!transaction) {
+//         console.error("❌ Transaction not found:", transactionId);
+//         return res.json({ received: true });
+//       }
+
+//       if (transaction.isPaid) {
+//         console.log("ℹ️ Transaction already processed:", transactionId);
+//         return res.json({ received: true });
+//       }
+
+//       console.log(`➡️ Adding ${transaction.credits} credits to user ${userId}`);
+
+//       const user = await User.findByIdAndUpdate(
+//         userId,
+//         { $inc: { credits: transaction.credits } },
+//         { new: true }
+//       );
+
+//       if (!user) {
+//         console.error("❌ User not found:", userId);
+//         return res.json({ received: true });
+//       }
+
+//       transaction.isPaid = true;
+//       await transaction.save();
+
+//       console.log(`✅ Credits updated! User now has ${user.credits} credits`);
+//     } catch (err) {
+//       console.error("❌ Webhook processing error:", err);
+//     }
+//   }
+
+//   res.json({ received: true });
+// };
+
+// In your controllers/webhooks.js
+import User from "../models/User.js";
+import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const stripeWebhooks = async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-
   let event;
+
   try {
-    event = stripe.webhooks.constructEvent(
-      req.body, // raw body
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
+    // Use raw body for Stripe signature verification
+    const signature = req.headers['stripe-signature'];
+    event = stripe.webhooks.constructEvent(req.body, signature, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error("❌ Webhook signature verification failed:", err.message);
+    console.error("⚠️ Stripe webhook signature verification failed.", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === "checkout.session.completed") {
+  // Handle checkout.session.completed event
+  if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-
-    console.log("🔔 Checkout session completed:", session.id);
-
-    // ✅ Refetch full session to ensure metadata is included
-    let fullSession;
-    try {
-      fullSession = await stripe.checkout.sessions.retrieve(session.id, {
-        expand: ["line_items"],
-      });
-    } catch (err) {
-      console.error("❌ Failed to retrieve full session:", err.message);
-      return res.json({ received: true });
-    }
-
-    console.log("📦 Metadata received in webhook:", fullSession.metadata);
-
-    const { transactionId, userId } = fullSession.metadata || {};
-
-    if (!transactionId || !userId) {
-      console.error("❌ Missing transactionId or userId in metadata");
-      return res.json({ received: true });
-    }
+    const userId = session.metadata?.userId; // assuming you pass userId in metadata
+    const creditsToAdd = parseInt(session.metadata?.credits) || 0;
 
     try {
-      const transaction = await Transaction.findById(transactionId);
-      if (!transaction) {
-        console.error("❌ Transaction not found:", transactionId);
-        return res.json({ received: true });
+      const user = await User.findById(userId);
+      if (user) {
+        user.credits += creditsToAdd;
+        await user.save();
+        console.log(`✅ Added ${creditsToAdd} credits to user ${user.email}`);
+      } else {
+        console.warn(`⚠️ User not found for ID: ${userId}`);
       }
-
-      if (transaction.isPaid) {
-        console.log("ℹ️ Transaction already processed:", transactionId);
-        return res.json({ received: true });
-      }
-
-      console.log(`➡️ Adding ${transaction.credits} credits to user ${userId}`);
-
-      const user = await User.findByIdAndUpdate(
-        userId,
-        { $inc: { credits: transaction.credits } },
-        { new: true }
-      );
-
-      if (!user) {
-        console.error("❌ User not found:", userId);
-        return res.json({ received: true });
-      }
-
-      transaction.isPaid = true;
-      await transaction.save();
-
-      console.log(`✅ Credits updated! User now has ${user.credits} credits`);
     } catch (err) {
-      console.error("❌ Webhook processing error:", err);
+      console.error("Error updating credits:", err);
     }
   }
 
   res.json({ received: true });
 };
+
 
