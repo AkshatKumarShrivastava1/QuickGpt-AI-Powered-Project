@@ -392,6 +392,7 @@
 // };
 
 // export default Login;import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 
@@ -426,9 +427,34 @@ const Login = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="form-container">
-      {/* Form inputs for name/email/password */}
-      <button type="submit" disabled={loading}>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 m-auto items-start p-8 py-12 w-80 sm:w-[352px] text-gray-500 rounded-lg shadow-xl border border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
+      <p className="text-2xl font-medium m-auto dark:text-white">
+        <span className="text-purple-700">User</span> {state === "login" ? "Login" : "Sign Up"}
+      </p>
+
+      {state === "register" && (
+        <div className="w-full">
+          <p>Name</p>
+          <input onChange={(e) => setName(e.target.value)} value={name} placeholder="Type here" type="text" required className="border p-2 w-full rounded outline-purple-700 dark:bg-gray-700 dark:text-white"/>
+        </div>
+      )}
+
+      <div className="w-full">
+        <p>Email</p>
+        <input onChange={(e) => setEmail(e.target.value)} value={email} placeholder="Type here" type="email" required className="border p-2 w-full rounded outline-purple-700 dark:bg-gray-700 dark:text-white"/>
+      </div>
+
+      <div className="w-full">
+        <p>Password</p>
+        <input onChange={(e) => setPassword(e.target.value)} value={password} placeholder="Type here" type="password" required className="border p-2 w-full rounded outline-purple-700 dark:bg-gray-700 dark:text-white"/>
+      </div>
+
+      <p>
+        {state === "register" ? "Already have an account?" : "Create an account?"}{" "}
+        <span onClick={() => setState(state === "login" ? "register" : "login")} className="text-purple-700 cursor-pointer">click here</span>
+      </p>
+
+      <button type="submit" disabled={loading} className="bg-purple-700 hover:bg-purple-800 text-white w-full py-2 rounded-md disabled:bg-purple-400">
         {loading ? 'Processing...' : (state === "register" ? "Create Account" : "Login")}
       </button>
     </form>
