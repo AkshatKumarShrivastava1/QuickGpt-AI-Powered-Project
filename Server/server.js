@@ -327,6 +327,64 @@
 
 // });
 
+// import express from "express";
+// import "dotenv/config";
+// import cors from "cors";
+// import connectDB from "./configs/db.js";
+// import userRouter from "./routes/userRouter.js";
+// import chatRouter from "./routes/chatRoutes.js";
+// import messageRouter from "./routes/messageRoutes.js";
+// import creditRouter from "./routes/creditRoutes.js";
+// import { stripeWebhooks } from "./controllers/webhooks.js";
+
+// const app = express();
+
+// // ----- Connect to MongoDB -----
+// await connectDB();
+
+// // ----- Stripe Webhook -----
+// app.post(
+//   "/api/stripe/webhook",
+//   express.raw({ type: "application/json" }),
+//   stripeWebhooks
+// );
+
+// // ----- CORS -----
+// const FRONTEND_URL = "https://quick-gpt-ai-powered-project-ep8m.vercel.app";
+
+// app.use(
+//   cors({
+//     origin: FRONTEND_URL,
+//     credentials: true,
+//   })
+// );
+
+// // Handle preflight OPTIONS requests
+// app.options("*", cors({
+//   origin: FRONTEND_URL,
+//   credentials: true,
+// }));
+
+// // ----- Body parser (after webhook) -----
+// app.use(express.json());
+
+// // ----- API Routes -----
+// app.use("/api/user", userRouter);
+// app.use("/api/chat", chatRouter);
+// app.use("/api/message", messageRouter);
+// app.use("/api/credit", creditRouter);
+
+// // ----- Fallback route -----
+// app.get("/", (req, res) => {
+//   res.send("Backend is running. Frontend is deployed separately.");
+// });
+
+// // ----- Start server -----
+// const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => {
+//   console.log(`✅ Backend running on port ${PORT}`);
+// });
+
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
@@ -356,13 +414,15 @@ app.use(
   cors({
     origin: FRONTEND_URL,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
 
-// Handle preflight OPTIONS requests
+// Handle preflight OPTIONS requests globally
 app.options("*", cors({
   origin: FRONTEND_URL,
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 }));
 
 // ----- Body parser (after webhook) -----
@@ -376,7 +436,7 @@ app.use("/api/credit", creditRouter);
 
 // ----- Fallback route -----
 app.get("/", (req, res) => {
-  res.send("Backend is running. Frontend is deployed separately.");
+  res.send("✅ Backend is running. Frontend is deployed separately.");
 });
 
 // ----- Start server -----
@@ -384,3 +444,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Backend running on port ${PORT}`);
 });
+
