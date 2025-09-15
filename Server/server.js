@@ -384,11 +384,11 @@
 // app.listen(PORT, () => {
 //   console.log(`✅ Backend running on port ${PORT}`);
 // });
-
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import connectDB from "./configs/db.js";
+
 import userRouter from "./routes/userRouter.js";
 import chatRouter from "./routes/chatRoutes.js";
 import messageRouter from "./routes/messageRoutes.js";
@@ -408,21 +408,17 @@ app.post(
 );
 
 // ----- CORS -----
-const FRONTEND_URL = "https://quick-gpt-ai-powered-project-ep8m.vercel.app";
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://quick-gpt-ai-powered-project-ep8m.vercel.app";
 
-app.use(
-  cors({
-    origin: FRONTEND_URL,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  })
-);
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true,
+}));
 
-// Handle preflight OPTIONS requests globally
+// Handle preflight OPTIONS requests
 app.options("*", cors({
   origin: FRONTEND_URL,
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 }));
 
 // ----- Body parser (after webhook) -----
@@ -436,7 +432,7 @@ app.use("/api/credit", creditRouter);
 
 // ----- Fallback route -----
 app.get("/", (req, res) => {
-  res.send("✅ Backend is running. Frontend is deployed separately.");
+  res.send("Backend is running. Frontend is deployed separately.");
 });
 
 // ----- Start server -----
@@ -444,4 +440,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Backend running on port ${PORT}`);
 });
-
