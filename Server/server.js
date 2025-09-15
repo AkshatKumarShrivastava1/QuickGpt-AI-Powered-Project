@@ -387,8 +387,11 @@
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
-import connectDB from "./configs/db.js";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
+import connectDB from "./configs/db.js";
 import userRouter from "./routes/userRouter.js";
 import chatRouter from "./routes/chatRoutes.js";
 import messageRouter from "./routes/messageRoutes.js";
@@ -400,7 +403,7 @@ const app = express();
 // ----- Connect to MongoDB -----
 await connectDB();
 
-// ----- Stripe Webhook -----
+// ----- Stripe Webhook (before express.json) -----
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),
@@ -408,18 +411,14 @@ app.post(
 );
 
 // ----- CORS -----
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://quick-gpt-ai-powered-project-ep8m.vercel.app";
+const FRONTEND_URL = process.env.CLIENT_URL || "https://quick-gpt-ai-powered-project-ep8m.vercel.app";
 
-app.use(cors({
-  origin: FRONTEND_URL,
-  credentials: true,
-}));
-
-// Handle preflight OPTIONS requests
-app.options("*", cors({
-  origin: FRONTEND_URL,
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+  })
+);
 
 // ----- Body parser (after webhook) -----
 app.use(express.json());
@@ -430,9 +429,23 @@ app.use("/api/chat", chatRouter);
 app.use("/api/message", messageRouter);
 app.use("/api/credit", creditRouter);
 
+// ----- Optional: Serve React if you want backend + frontend together -----
+// Comment this out if frontend is on Vercel separately
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientPath = path.join(__dirname, "..", "Client");
+const indexHtmlPath = path.join(clientPath, "index.html");
+
+if (fs.existsSync(indexHtmlPath)) {
+  app.use(express.static(clientPath));
+  app.get(/.*/, (req, res) => res.sendFile(indexHtmlPath));
+} else {
+  app.get(/.*/, (req, res) => res.status(404).send("React index.html not found in Client folder."));
+}
+
 // ----- Fallback route -----
 app.get("/", (req, res) => {
-  res.send("Backend is running. Frontend is deployed separately.");
+  res.send("Backend is running. Frontend deployed separately.");
 });
 
 // ----- Start server -----
@@ -440,3 +453,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Backend running on port ${PORT}`);
 });
+
