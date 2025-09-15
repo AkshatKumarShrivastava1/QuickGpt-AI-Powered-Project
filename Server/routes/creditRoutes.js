@@ -1,6 +1,6 @@
 import express from "express";
 import { getPlans, purchasePlan } from "../controllers/creditController.js";
-import { protect } from "../middlewares/auth.js";
+import { authMiddleware } from "../middlewares/auth.js";
 
 const creditRouter = express.Router();
 
@@ -8,7 +8,7 @@ const creditRouter = express.Router();
 creditRouter.get("/plan", getPlans);
 
 // ✅ Purchase a plan (requires authentication)
-creditRouter.post("/purchase", protect, purchasePlan);
+creditRouter.post("/purchase",authMiddleware, purchasePlan);
 
 export default creditRouter;
 
