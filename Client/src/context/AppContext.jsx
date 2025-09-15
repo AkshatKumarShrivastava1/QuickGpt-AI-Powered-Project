@@ -825,6 +825,144 @@
 // };
 
 // export const useAppContext = () => useContext(AppContext);
+// import { useEffect, useState, createContext, useContext, useCallback } from 'react';
+// import { useNavigate } from 'react-router-dom';
+// import axios from 'axios';
+// import toast from 'react-hot-toast';
+
+// const AppContext = createContext();
+// const PAYMENT_KEY = 'payment_status_v2';
+
+// // Use API_BASE to point to backend
+// const API_BASE = import.meta.env.VITE_API_URL || 'https://quick-gpt-ai-powered-project.vercel.app/api';
+
+// export const AppContextProvider = ({ children }) => {
+//   const navigate = useNavigate();
+
+//   const [user, setUser] = useState(null);
+//   const [chats, setChats] = useState([]);
+//   const [selectedChat, setSelectedChat] = useState(null);
+//   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+//   const [token, setToken] = useState(localStorage.getItem('token') || null);
+//   const [loadingUser, setLoadingUser] = useState(true);
+//   const [loadingChat, setLoadingChat] = useState(false);
+
+//   useEffect(() => {
+//     if (theme === 'dark') document.documentElement.classList.add('dark');
+//     else document.documentElement.classList.remove('dark');
+//     localStorage.setItem('theme', theme);
+//   }, [theme]);
+
+//   const fetchUser = useCallback(async (tokenToUse) => {
+//     if (!tokenToUse) {
+//       setLoadingUser(false);
+//       return;
+//     }
+//     try {
+//       const { data } = await axios.get(`${API_BASE}/user/data`, {
+//         headers: { Authorization: `Bearer ${tokenToUse}` },
+//       });
+//       if (data.success) setUser(data.user);
+//       else if (localStorage.getItem('token')) toast.error(data.message);
+//     } catch (error) {
+//       if (localStorage.getItem('token')) {
+//         toast.error(error.response?.data?.message || 'Session expired.');
+//         localStorage.removeItem('token');
+//         setToken(null);
+//       }
+//     } finally {
+//       setLoadingUser(false);
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     if (token) fetchUser(token);
+//     else setLoadingUser(false);
+//   }, [token, fetchUser]);
+
+//   const logout = useCallback(() => {
+//     localStorage.removeItem('token');
+//     setToken(null);
+//     setUser(null);
+//     setChats([]);
+//     setSelectedChat(null);
+//     navigate('/');
+//     toast.success('Logged out successfully');
+//   }, [navigate]);
+
+//   const fetchUsersChats = useCallback(async () => {
+//     if (!user || !token) return;
+//     try {
+//       const { data } = await axios.get(`${API_BASE}/chat/get`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       if (data.success) {
+//         setChats(data.chats || []);
+//         if ((data.chats || []).length > 0) setSelectedChat(prev => prev || data.chats[0]);
+//       } else toast.error(data.message);
+//     } catch (error) {
+//       toast.error(error.response?.data?.message || error.message);
+//     }
+//   }, [user, token]);
+
+//   const createNewChat = useCallback(async () => {
+//     if (!user || !token) return toast.error('Login to create new chat');
+//     if (loadingChat) return;
+//     setLoadingChat(true);
+//     try {
+//       const { data } = await axios.get(`${API_BASE}/chat/create`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       if (data.success) {
+//         await fetchUsersChats();
+//         toast.success('New chat created!');
+//       } else toast.error(data.message);
+//     } catch (error) {
+//       toast.error(error.response?.data?.message || error.message);
+//     } finally {
+//       setLoadingChat(false);
+//     }
+//   }, [user, token, loadingChat, fetchUsersChats]);
+
+//   useEffect(() => {
+//     if (user?._id) fetchUsersChats();
+//     else {
+//       setChats([]);
+//       setSelectedChat(null);
+//     }
+//   }, [user?._id, fetchUsersChats]);
+
+//   return (
+//     <AppContext.Provider
+//       value={{
+//         navigate,
+//         user,
+//         setUser,
+//         theme,
+//         setTheme,
+//         chats,
+//         setChats,
+//         selectedChat,
+//         setSelectedChat,
+//         loadingUser,
+//         token,
+//         setToken,
+//         axios,
+//         fetchUser,
+//         fetchUsersChats,
+//         createNewChat,
+//         logout,
+//         loadingChat,
+//         API_BASE, // export API_BASE for other components
+//       }}
+//     >
+//       {children}
+//     </AppContext.Provider>
+//   );
+// };
+
+// export const useAppContext = () => useContext(AppContext);
+
 import { useEffect, useState, createContext, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -833,7 +971,7 @@ import toast from 'react-hot-toast';
 const AppContext = createContext();
 const PAYMENT_KEY = 'payment_status_v2';
 
-// Use API_BASE to point to backend
+// Full backend URL
 const API_BASE = import.meta.env.VITE_API_URL || 'https://quick-gpt-ai-powered-project.vercel.app/api';
 
 export const AppContextProvider = ({ children }) => {
@@ -847,12 +985,14 @@ export const AppContextProvider = ({ children }) => {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingChat, setLoadingChat] = useState(false);
 
+  // Theme toggle
   useEffect(() => {
     if (theme === 'dark') document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Fetch user
   const fetchUser = useCallback(async (tokenToUse) => {
     if (!tokenToUse) {
       setLoadingUser(false);
@@ -863,13 +1003,11 @@ export const AppContextProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${tokenToUse}` },
       });
       if (data.success) setUser(data.user);
-      else if (localStorage.getItem('token')) toast.error(data.message);
-    } catch (error) {
-      if (localStorage.getItem('token')) {
-        toast.error(error.response?.data?.message || 'Session expired.');
-        localStorage.removeItem('token');
-        setToken(null);
-      }
+      else toast.error(data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Session expired.');
+      localStorage.removeItem('token');
+      setToken(null);
     } finally {
       setLoadingUser(false);
     }
@@ -880,6 +1018,7 @@ export const AppContextProvider = ({ children }) => {
     else setLoadingUser(false);
   }, [token, fetchUser]);
 
+  // Logout
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     setToken(null);
@@ -890,6 +1029,7 @@ export const AppContextProvider = ({ children }) => {
     toast.success('Logged out successfully');
   }, [navigate]);
 
+  // Fetch chats
   const fetchUsersChats = useCallback(async () => {
     if (!user || !token) return;
     try {
@@ -900,11 +1040,12 @@ export const AppContextProvider = ({ children }) => {
         setChats(data.chats || []);
         if ((data.chats || []).length > 0) setSelectedChat(prev => prev || data.chats[0]);
       } else toast.error(data.message);
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
     }
   }, [user, token]);
 
+  // Create new chat
   const createNewChat = useCallback(async () => {
     if (!user || !token) return toast.error('Login to create new chat');
     if (loadingChat) return;
@@ -917,8 +1058,8 @@ export const AppContextProvider = ({ children }) => {
         await fetchUsersChats();
         toast.success('New chat created!');
       } else toast.error(data.message);
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
     } finally {
       setLoadingChat(false);
     }
@@ -953,7 +1094,7 @@ export const AppContextProvider = ({ children }) => {
         createNewChat,
         logout,
         loadingChat,
-        API_BASE, // export API_BASE for other components
+        API_BASE,
       }}
     >
       {children}
@@ -962,3 +1103,5 @@ export const AppContextProvider = ({ children }) => {
 };
 
 export const useAppContext = () => useContext(AppContext);
+
+
