@@ -392,7 +392,6 @@
 // };
 
 // export default Login;
-
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
@@ -404,26 +403,33 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { axios, setToken, fetchUser, API_BASE } = useAppContext();
+  const { setToken, fetchUser, API_BASE } = useAppContext();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const url = state === "login" ? `${API_BASE}/user/login` : `${API_BASE}/user/register`;
+    const url = state === "login"
+      ? `${API_BASE}/user/login`
+      : `${API_BASE}/user/register`;
 
     try {
-      const { data } = await axios.post(url, { name, email, password });
-      if (data.success) {
+      const { data } = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      }).then(res => res.json());
+
+      if (data?.success || data?.token) {
         setToken(data.token);
         localStorage.setItem('token', data.token);
         await fetchUser(data.token);
         toast.success(`Successfully ${state === 'login' ? 'logged in' : 'registered'}!`);
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Failed to login/register");
       }
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+    } catch (err) {
+      toast.error(err.message || "Network error");
     } finally {
       setLoading(false);
     }
@@ -438,63 +444,29 @@ const Login = () => {
       {state === "register" && (
         <div className="w-full">
           <p>Name</p>
-          <input
-            onChange={(e) => setName(e.target.value)}
-            value={name}
-            placeholder="Type here"
-            className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            type="text"
-            required
-          />
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Type here" required className="border p-2 w-full rounded mt-1 dark:bg-gray-700 dark:text-white"/>
         </div>
       )}
 
       <div className="w-full">
         <p>Email</p>
-        <input
-          onChange={(e) => setEmail(e.target.value)}
-          value={email}
-          placeholder="Type here"
-          className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          type="email"
-          required
-        />
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Type here" type="email" required className="border p-2 w-full rounded mt-1 dark:bg-gray-700 dark:text-white"/>
       </div>
 
       <div className="w-full">
         <p>Password</p>
-        <input
-          onChange={(e) => setPassword(e.target.value)}
-          value={password}
-          placeholder="Type here"
-          className="border border-gray-200 rounded w-full p-2 mt-1 outline-purple-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          type="password"
-          required
-        />
+        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Type here" type="password" required className="border p-2 w-full rounded mt-1 dark:bg-gray-700 dark:text-white"/>
       </div>
 
-      {state === "register" ? (
-        <p>
-          Already have an account?{" "}
-          <span onClick={() => setState("login")} className="text-purple-700 cursor-pointer">
-            click here
-          </span>
-        </p>
-      ) : (
-        <p>
-          Create an account?{" "}
-          <span onClick={() => setState("register")} className="text-purple-700 cursor-pointer">
-            click here
-          </span>
-        </p>
-      )}
+      <p>
+        {state === "register" ? "Already have an account?" : "Create an account?"}{" "}
+        <span onClick={() => setState(state === "login" ? "register" : "login")} className="text-purple-700 cursor-pointer">
+          click here
+        </span>
+      </p>
 
-      <button
-        type="submit"
-        className="bg-purple-700 hover:bg-purple-800 transition-all text-white w-full py-2 rounded-md cursor-pointer disabled:bg-purple-400 disabled:cursor-not-allowed"
-        disabled={loading}
-      >
-        {loading ? 'Processing...' : (state === "register" ? "Create Account" : "Login")}
+      <button type="submit" disabled={loading} className="bg-purple-700 hover:bg-purple-800 text-white w-full py-2 rounded-md disabled:bg-purple-400">
+        {loading ? 'Processing...' : (state === "login" ? "Login" : "Create Account")}
       </button>
     </form>
   );
