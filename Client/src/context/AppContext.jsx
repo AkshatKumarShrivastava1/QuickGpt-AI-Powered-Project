@@ -970,6 +970,7 @@ import toast from 'react-hot-toast';
 const AppContext = createContext();
 const PAYMENT_KEY = 'payment_status_v2';
 
+// ✅ Use backend URL from .env
 const API_BASE = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 axios.defaults.baseURL = `${API_BASE}/api`;
 
@@ -996,17 +997,15 @@ export const AppContextProvider = ({ children }) => {
       return;
     }
     try {
-      const { data } = await axios.get('/user/data', {
+      const { data } = await axios.get(`/user/data`, {
         headers: { Authorization: `Bearer ${tokenToUse}` },
       });
       if (data.success) setUser(data.user);
-      else if (localStorage.getItem('token')) toast.error(data.message);
+      else toast.error(data.message);
     } catch (error) {
-      if (localStorage.getItem('token')) {
-        toast.error(error.response?.data?.message || 'Session expired.');
-        localStorage.removeItem('token');
-        setToken(null);
-      }
+      toast.error(error.response?.data?.message || 'Session expired.');
+      localStorage.removeItem('token');
+      setToken(null);
     } finally {
       setLoadingUser(false);
     }
@@ -1030,12 +1029,13 @@ export const AppContextProvider = ({ children }) => {
   const fetchUsersChats = useCallback(async () => {
     if (!user || !token) return;
     try {
-      const { data } = await axios.get('/chat/get', {
+      const { data } = await axios.get(`/chat/get`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (data.success) {
         setChats(data.chats || []);
-        if ((data.chats || []).length > 0) setSelectedChat(prev => prev || data.chats[0]);
+        if ((data.chats || []).length > 0)
+          setSelectedChat(prev => prev || data.chats[0]);
       } else toast.error(data.message);
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
@@ -1047,7 +1047,7 @@ export const AppContextProvider = ({ children }) => {
     if (loadingChat) return;
     setLoadingChat(true);
     try {
-      const { data } = await axios.get('/chat/create', {
+      const { data } = await axios.get(`/chat/create`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (data.success) {
