@@ -650,12 +650,189 @@
 // export const useAppContext = () => useContext(AppContext);
 
 // src/context/AppContext.jsx
+// import { useEffect, useState, createContext, useContext, useCallback } from 'react';
+// import { useNavigate } from 'react-router-dom';
+// import axios from 'axios';
+// import toast from 'react-hot-toast';
+
+// axios.defaults.baseURL = import.meta.env.VITE_API_URL || '/api';
+
+// const AppContext = createContext();
+// const PAYMENT_KEY = 'payment_status_v2';
+
+// export const AppContextProvider = ({ children }) => {
+//   const navigate = useNavigate();
+
+//   const [user, setUser] = useState(null);
+//   const [chats, setChats] = useState([]);
+//   const [selectedChat, setSelectedChat] = useState(null);
+//   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+//   const [token, setToken] = useState(localStorage.getItem('token') || null);
+//   const [loadingUser, setLoadingUser] = useState(true);
+//   const [loadingChat, setLoadingChat] = useState(false);
+
+//   useEffect(() => {
+//     if (theme === 'dark') document.documentElement.classList.add('dark');
+//     else document.documentElement.classList.remove('dark');
+//     localStorage.setItem('theme', theme);
+//   }, [theme]);
+
+//   const fetchUser = useCallback(async (tokenToUse) => {
+//     if (!tokenToUse) {
+//       setLoadingUser(false);
+//       return;
+//     }
+//     try {
+//       const { data } = await axios.get('/user/data', {
+//         headers: { Authorization: `Bearer ${tokenToUse}` },
+//       });
+//       if (data.success) {
+//         setUser(data.user);
+//       } else {
+//         if (localStorage.getItem('token')) toast.error(data.message);
+//       }
+//     } catch (error) {
+//       if (localStorage.getItem('token')) {
+//         toast.error(error.response?.data?.message || 'Session expired.');
+//         localStorage.removeItem('token');
+//         setToken(null);
+//       }
+//     } finally {
+//       setLoadingUser(false);
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     if (token) fetchUser(token);
+//     else setLoadingUser(false);
+//   }, [token, fetchUser]);
+
+//   // Robust payment processing:
+//   useEffect(() => {
+//     try {
+//       const raw = localStorage.getItem(PAYMENT_KEY);
+//       if (!raw) return;
+//       const parsed = JSON.parse(raw);
+//       // We expect { status: 'success'|'processing', id: number }
+//       if (!parsed || !parsed.status) return;
+
+//       // If success — immediately mark as processing (synchronously).
+//       if (parsed.status === 'success' && token) {
+//         // mark so subsequent mounts/effects see 'processing' and skip
+//         localStorage.setItem(PAYMENT_KEY, JSON.stringify({ status: 'processing', id: parsed.id }));
+//         (async () => {
+//           try {
+//             await fetchUser(token); // update user (credits)
+//             toast.success('Payment successful! Credits updated 🎉');
+//           } catch (err) {
+//             toast.error('Payment processed but failed to update user.');
+//           } finally {
+//             // clear flag
+//             localStorage.removeItem(PAYMENT_KEY);
+//           }
+//         })();
+//       }
+//     } catch (err) {
+//       // ignore parse errors
+//       console.error('Payment key parse error', err);
+//     }
+//   }, [token, fetchUser]);
+
+//   const logout = useCallback(() => {
+//     localStorage.removeItem('token');
+//     setToken(null);
+//     setUser(null);
+//     setChats([]);
+//     setSelectedChat(null);
+//     navigate('/');
+//     toast.success('Logged out successfully');
+//   }, [navigate]);
+
+//   // ... fetchUsersChats, createNewChat same as before (omitted for brevity) ...
+//   // For completeness paste your existing functions here (unchanged).
+
+//   const fetchUsersChats = useCallback(async () => {
+//     if (!user || !token) return;
+//     try {
+//       const { data } = await axios.get('/chat/get', {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       if (data.success) {
+//         const chatsArray = data.chats || [];
+//         setChats(chatsArray);
+//         if (chatsArray.length > 0) {
+//           setSelectedChat(prev => prev || chatsArray[0]);
+//         }
+//       } else {
+//         toast.error(data.message);
+//       }
+//     } catch (error) {
+//       toast.error(error.response?.data?.message || error.message);
+//     }
+//   }, [user, token]);
+
+//   const createNewChat = useCallback(async () => {
+//     if (!user || !token) return toast('Login to create new chat');
+//     if (loadingChat) return;
+//     setLoadingChat(true);
+//     try {
+//       const { data } = await axios.get('/chat/create', {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       if (data.success) {
+//         await fetchUsersChats();
+//         toast.success('New chat created!');
+//       } else {
+//         toast.error(data.message);
+//       }
+//     } catch (error) {
+//       toast.error(error.response?.data?.message || error.message);
+//     } finally {
+//       setLoadingChat(false);
+//     }
+//   }, [user, token, loadingChat, fetchUsersChats]);
+
+//   useEffect(() => {
+//     if (user?._id) fetchUsersChats();
+//     else {
+//       setChats([]);
+//       setSelectedChat(null);
+//     }
+//   }, [user?._id, fetchUsersChats]);
+
+//   const value = {
+//     navigate,
+//     user,
+//     setUser,
+//     theme,
+//     setTheme,
+//     chats,
+//     setChats,
+//     selectedChat,
+//     setSelectedChat,
+//     loadingUser,
+//     token,
+//     setToken,
+//     axios,
+//     fetchUser,
+//     fetchUsersChats,
+//     createNewChat,
+//     logout,
+//     loadingChat,
+//   };
+
+//   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+// };
+
+// export const useAppContext = () => useContext(AppContext);
+
+
 import { useEffect, useState, createContext, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || '/api';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL;
 
 const AppContext = createContext();
 const PAYMENT_KEY = 'payment_status_v2';
@@ -671,32 +848,28 @@ export const AppContextProvider = ({ children }) => {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingChat, setLoadingChat] = useState(false);
 
+  // Theme persistence
   useEffect(() => {
-    if (theme === 'dark') document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+    document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Fetch user info
   const fetchUser = useCallback(async (tokenToUse) => {
     if (!tokenToUse) {
       setLoadingUser(false);
       return;
     }
     try {
-      const { data } = await axios.get('/user/data', {
+      const { data } = await axios.get('user/data', {
         headers: { Authorization: `Bearer ${tokenToUse}` },
       });
-      if (data.success) {
-        setUser(data.user);
-      } else {
-        if (localStorage.getItem('token')) toast.error(data.message);
-      }
-    } catch (error) {
-      if (localStorage.getItem('token')) {
-        toast.error(error.response?.data?.message || 'Session expired.');
-        localStorage.removeItem('token');
-        setToken(null);
-      }
+      if (data.success) setUser(data.user);
+      else toast.error(data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Session expired');
+      localStorage.removeItem('token');
+      setToken(null);
     } finally {
       setLoadingUser(false);
     }
@@ -707,35 +880,28 @@ export const AppContextProvider = ({ children }) => {
     else setLoadingUser(false);
   }, [token, fetchUser]);
 
-  // Robust payment processing:
+  // Payment processing
   useEffect(() => {
     try {
       const raw = localStorage.getItem(PAYMENT_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      // We expect { status: 'success'|'processing', id: number }
-      if (!parsed || !parsed.status) return;
+      if (!parsed?.status) return;
 
-      // If success — immediately mark as processing (synchronously).
       if (parsed.status === 'success' && token) {
-        // mark so subsequent mounts/effects see 'processing' and skip
         localStorage.setItem(PAYMENT_KEY, JSON.stringify({ status: 'processing', id: parsed.id }));
         (async () => {
           try {
-            await fetchUser(token); // update user (credits)
+            await fetchUser(token);
             toast.success('Payment successful! Credits updated 🎉');
-          } catch (err) {
+          } catch {
             toast.error('Payment processed but failed to update user.');
           } finally {
-            // clear flag
             localStorage.removeItem(PAYMENT_KEY);
           }
         })();
       }
-    } catch (err) {
-      // ignore parse errors
-      console.error('Payment key parse error', err);
-    }
+    } catch (err) { console.error('Payment parse error', err); }
   }, [token, fetchUser]);
 
   const logout = useCallback(() => {
@@ -748,48 +914,38 @@ export const AppContextProvider = ({ children }) => {
     toast.success('Logged out successfully');
   }, [navigate]);
 
-  // ... fetchUsersChats, createNewChat same as before (omitted for brevity) ...
-  // For completeness paste your existing functions here (unchanged).
-
+  // Fetch user chats
   const fetchUsersChats = useCallback(async () => {
     if (!user || !token) return;
     try {
-      const { data } = await axios.get('/chat/get', {
+      const { data } = await axios.get('chat/get', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (data.success) {
-        const chatsArray = data.chats || [];
-        setChats(chatsArray);
-        if (chatsArray.length > 0) {
-          setSelectedChat(prev => prev || chatsArray[0]);
-        }
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+        setChats(data.chats || []);
+        setSelectedChat(prev => prev || data.chats[0] || null);
+      } else toast.error(data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
     }
   }, [user, token]);
 
+  // Create new chat
   const createNewChat = useCallback(async () => {
-    if (!user || !token) return toast('Login to create new chat');
+    if (!user || !token) return toast.error('Login to create a new chat');
     if (loadingChat) return;
     setLoadingChat(true);
     try {
-      const { data } = await axios.get('/chat/create', {
+      const { data } = await axios.post('chat/create', {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (data.success) {
         await fetchUsersChats();
         toast.success('New chat created!');
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
-    } finally {
-      setLoadingChat(false);
-    }
+      } else toast.error(data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
+    } finally { setLoadingChat(false); }
   }, [user, token, loadingChat, fetchUsersChats]);
 
   useEffect(() => {
@@ -800,28 +956,19 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [user?._id, fetchUsersChats]);
 
-  const value = {
-    navigate,
-    user,
-    setUser,
-    theme,
-    setTheme,
-    chats,
-    setChats,
-    selectedChat,
-    setSelectedChat,
-    loadingUser,
-    token,
-    setToken,
-    axios,
-    fetchUser,
-    fetchUsersChats,
-    createNewChat,
-    logout,
-    loadingChat,
-  };
-
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={{
+      user, setUser, token, setToken,
+      chats, setChats, selectedChat, setSelectedChat,
+      theme, setTheme,
+      loadingUser, loadingChat,
+      fetchUser, fetchUsersChats, createNewChat, logout,
+      axios, navigate
+    }}>
+      {children}
+    </AppContext.Provider>
+  );
 };
 
 export const useAppContext = () => useContext(AppContext);
+
