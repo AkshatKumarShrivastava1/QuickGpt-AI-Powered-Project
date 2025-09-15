@@ -987,7 +987,6 @@
 // };
 
 // export default ChatBox;
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { assets } from '../assets/assets';
@@ -1005,8 +1004,8 @@ const ChatBox = () => {
   const [mode, setMode] = useState('text');
   const [isPublished, setIsPublished] = useState(false);
 
-  // ✅ Absolute backend URL
-  const API_BASE = import.meta.env.VITE_API_URL || 'https://quick-gpt-ai-powered-project.vercel.app/api';
+  const API_BASE = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+  axios.defaults.baseURL = `${API_BASE}/api`;
 
   const uploadToCloudinary = async (imageBlob) => {
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
@@ -1032,9 +1031,7 @@ const ChatBox = () => {
       if (data.secure_url) {
         toast.success('Image processed successfully!');
         return data.secure_url;
-      } else {
-        throw new Error('Upload failed.');
-      }
+      } else throw new Error('Upload failed.');
     } catch (error) {
       toast.dismiss();
       console.error('Cloudinary upload error:', error);
@@ -1053,11 +1050,8 @@ const ChatBox = () => {
     const currentPrompt = prompt;
     setPrompt('');
 
-    if (mode === 'image') {
-      await handleImageGeneration(currentPrompt);
-    } else {
-      await handleTextMessage(currentPrompt);
-    }
+    if (mode === 'image') await handleImageGeneration(currentPrompt);
+    else await handleTextMessage(currentPrompt);
 
     setLoading(false);
   };
@@ -1067,20 +1061,18 @@ const ChatBox = () => {
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      const { data } = await axios.post(`${API_BASE}/message/text`,
+      const { data } = await axios.post(`/message/text`,
         { chatId: selectedChat._id, prompt: currentPrompt },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (data.success) {
         const aiReply = data.reply;
-        const newMessages = [userMessage, aiReply];
-
         setMessages(prev => [...prev, aiReply]);
         setChats(prevChats => prevChats.map(chat =>
-          chat._id === selectedChat._id ? { ...chat, messages: [...chat.messages, ...newMessages] } : chat
+          chat._id === selectedChat._id ? { ...chat, messages: [...chat.messages, userMessage, aiReply] } : chat
         ));
-        setSelectedChat(prev => prev ? { ...prev, messages: [...prev.messages, ...newMessages] } : null);
+        setSelectedChat(prev => prev ? { ...prev, messages: [...prev.messages, userMessage, aiReply] } : null);
         setUser(prev => ({ ...prev, credits: prev.credits - 1 }));
       } else {
         toast.error(data.message);
@@ -1097,36 +1089,29 @@ const ChatBox = () => {
     setMessages(prev => [...prev, userMessage]);
 
     const imageBlob = await generateImageWithHuggingFace(currentPrompt);
-    if (!imageBlob) {
-      setMessages(prev => prev.filter(msg => msg.timestamp !== userMessage.timestamp));
-      return;
-    }
+    if (!imageBlob) return setMessages(prev => prev.filter(msg => msg.timestamp !== userMessage.timestamp));
 
     const imageUrl = await uploadToCloudinary(imageBlob);
-    if (!imageUrl) {
-      setMessages(prev => prev.filter(msg => msg.timestamp !== userMessage.timestamp));
-      return;
-    }
+    if (!imageUrl) return setMessages(prev => prev.filter(msg => msg.timestamp !== userMessage.timestamp));
 
     const aiReply = { role: 'assistant', content: imageUrl, timestamp: Date.now(), isImage: true, isPublished };
 
     try {
-      await axios.post(`${API_BASE}/message/save`,
+      await axios.post(`/message/save`,
         { chatId: selectedChat._id, userMessage, aiReply },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const newMessages = [userMessage, aiReply];
       setMessages(prev => [...prev, aiReply]);
       setChats(prevChats => prevChats.map(chat =>
-        chat._id === selectedChat._id ? { ...chat, messages: [...chat.messages, ...newMessages] } : chat
+        chat._id === selectedChat._id ? { ...chat, messages: [...chat.messages, userMessage, aiReply] } : chat
       ));
-      setSelectedChat(prev => prev ? { ...prev, messages: [...prev.messages, ...newMessages] } : null);
+      setSelectedChat(prev => prev ? { ...prev, messages: [...prev.messages, userMessage, aiReply] } : null);
       setUser(prev => ({ ...prev, credits: prev.credits - 2 }));
 
       if (isPublished) {
         try {
-          const response = await axios.post(`${API_BASE}/community/publish`,
+          const response = await axios.post(`/community/publish`,
             { prompt: currentPrompt, imageUrl },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -1147,12 +1132,7 @@ const ChatBox = () => {
   }, [selectedChat?._id]);
 
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({
-        top: containerRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
+    if (containerRef.current) containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
   return (
@@ -1161,9 +1141,7 @@ const ChatBox = () => {
         {messages.length === 0 && (
           <div className='h-full flex flex-col justify-center items-center gap-2 text-primary'>
             <img src={theme === 'dark' ? assets.logo_full : assets.logo_full_dark} alt="logo" className='w-40 max-w-56 sm:max-w-68' />
-            <p className='mt-5 text-4xl sm:text-6xl text-center text-gray-400 dark:text-white'>
-              Ask me Anything
-            </p>
+            <p className='mt-5 text-4xl sm:text-6xl text-center text-gray-400 dark:text-white'>Ask me Anything</p>
           </div>
         )}
         {messages.map((message, index) => <Message key={`${message.timestamp}-${index}`} message={message} />)}
@@ -1179,12 +1157,7 @@ const ChatBox = () => {
       {mode === 'image' && (
         <label className='inline-flex items-center gap-2 text-sm mb-3 mx-auto'>
           <p className="text-xs">Publish Generated Image to Community</p>
-          <input
-            type="checkbox"
-            checked={isPublished}
-            onChange={() => setIsPublished(prev => !prev)}
-            className='cursor-pointer'
-          />
+          <input type="checkbox" checked={isPublished} onChange={() => setIsPublished(prev => !prev)} className='cursor-pointer'/>
         </label>
       )}
 
@@ -1193,22 +1166,11 @@ const ChatBox = () => {
           <option className='dark:bg-purple-900' value='text'>Text</option>
           <option className='dark:bg-purple-900' value='image'>Image</option>
         </select>
-        <input
-          type="text"
-          onChange={(e) => setPrompt(e.target.value)}
-          value={prompt}
-          placeholder="Type your text prompt here..."
-          className="flex-1 w-full text-sm outline-none bg-transparent"
-          required
-        />
-        <button disabled={loading}>
-          <img src={loading ? assets.stop_icon : assets.send_icon} alt="send" className='w-8 cursor-pointer' />
-        </button>
+        <input type="text" onChange={(e) => setPrompt(e.target.value)} value={prompt} placeholder="Type your text prompt here..." className="flex-1 w-full text-sm outline-none bg-transparent" required/>
+        <button disabled={loading}><img src={loading ? assets.stop_icon : assets.send_icon} alt="send" className='w-8 cursor-pointer'/></button>
       </form>
     </div>
   );
 };
 
 export default ChatBox;
-
-
