@@ -971,7 +971,7 @@ import toast from 'react-hot-toast';
 const AppContext = createContext();
 const PAYMENT_KEY = 'payment_status_v2';
 
-// Full backend URL
+// Backend URL
 const API_BASE = import.meta.env.VITE_API_URL || 'https://quick-gpt-ai-powered-project.vercel.app/api';
 
 export const AppContextProvider = ({ children }) => {
@@ -985,14 +985,12 @@ export const AppContextProvider = ({ children }) => {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingChat, setLoadingChat] = useState(false);
 
-  // Theme toggle
   useEffect(() => {
     if (theme === 'dark') document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Fetch user
   const fetchUser = useCallback(async (tokenToUse) => {
     if (!tokenToUse) {
       setLoadingUser(false);
@@ -1018,7 +1016,6 @@ export const AppContextProvider = ({ children }) => {
     else setLoadingUser(false);
   }, [token, fetchUser]);
 
-  // Logout
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     setToken(null);
@@ -1029,7 +1026,6 @@ export const AppContextProvider = ({ children }) => {
     toast.success('Logged out successfully');
   }, [navigate]);
 
-  // Fetch chats
   const fetchUsersChats = useCallback(async () => {
     if (!user || !token) return;
     try {
@@ -1045,7 +1041,6 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [user, token]);
 
-  // Create new chat
   const createNewChat = useCallback(async () => {
     if (!user || !token) return toast.error('Login to create new chat');
     if (loadingChat) return;
@@ -1103,5 +1098,7 @@ export const AppContextProvider = ({ children }) => {
 };
 
 export const useAppContext = () => useContext(AppContext);
+
+
 
 
