@@ -391,8 +391,7 @@
 //   );
 // };
 
-// export default Login;
-import React, { useState } from 'react';
+// export default Login;import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 
@@ -403,70 +402,34 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { setToken, fetchUser, API_BASE } = useAppContext();
+  const { axios, setToken, fetchUser } = useAppContext();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const url = state === "login"
-      ? `${API_BASE}/user/login`
-      : `${API_BASE}/user/register`;
+    const url = state === "login" ? '/user/login' : '/user/register';
 
     try {
-      const { data } = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      }).then(res => res.json());
-
-      if (data?.success || data?.token) {
+      const { data } = await axios.post(url, { name, email, password });
+      if (data.success) {
         setToken(data.token);
         localStorage.setItem('token', data.token);
         await fetchUser(data.token);
         toast.success(`Successfully ${state === 'login' ? 'logged in' : 'registered'}!`);
-      } else {
-        toast.error(data.message || "Failed to login/register");
-      }
-    } catch (err) {
-      toast.error(err.message || "Network error");
+      } else toast.error(data.message);
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 m-auto items-start p-8 py-12 w-80 sm:w-[352px] text-gray-500 rounded-lg shadow-xl border border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
-      <p className="text-2xl font-medium m-auto dark:text-white">
-        <span className="text-purple-700">User</span> {state === "login" ? "Login" : "Sign Up"}
-      </p>
-
-      {state === "register" && (
-        <div className="w-full">
-          <p>Name</p>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Type here" required className="border p-2 w-full rounded mt-1 dark:bg-gray-700 dark:text-white"/>
-        </div>
-      )}
-
-      <div className="w-full">
-        <p>Email</p>
-        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Type here" type="email" required className="border p-2 w-full rounded mt-1 dark:bg-gray-700 dark:text-white"/>
-      </div>
-
-      <div className="w-full">
-        <p>Password</p>
-        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Type here" type="password" required className="border p-2 w-full rounded mt-1 dark:bg-gray-700 dark:text-white"/>
-      </div>
-
-      <p>
-        {state === "register" ? "Already have an account?" : "Create an account?"}{" "}
-        <span onClick={() => setState(state === "login" ? "register" : "login")} className="text-purple-700 cursor-pointer">
-          click here
-        </span>
-      </p>
-
-      <button type="submit" disabled={loading} className="bg-purple-700 hover:bg-purple-800 text-white w-full py-2 rounded-md disabled:bg-purple-400">
-        {loading ? 'Processing...' : (state === "login" ? "Login" : "Create Account")}
+    <form onSubmit={handleSubmit} className="form-container">
+      {/* Form inputs for name/email/password */}
+      <button type="submit" disabled={loading}>
+        {loading ? 'Processing...' : (state === "register" ? "Create Account" : "Login")}
       </button>
     </form>
   );
