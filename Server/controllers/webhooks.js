@@ -268,43 +268,50 @@
 // };
 
 // In your controllers/webhooks.js
-import User from "../models/User.js";
 import Stripe from "stripe";
+import User from "../models/User.js";
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const stripeWebhooks = async (req, res) => {
   let event;
 
   try {
-    // Use raw body for Stripe signature verification
-    const signature = req.headers['stripe-signature'];
-    event = stripe.webhooks.constructEvent(req.body, signature, process.env.STRIPE_WEBHOOK_SECRET);
+    const signature = req.headers["stripe-signature"];
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
   } catch (err) {
-    console.error("⚠️ Stripe webhook signature verification failed.", err.message);
+    console.error("⚠️ Webhook signature verification failed.", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle checkout.session.completed event
-  if (event.type === 'checkout.session.completed') {
+  // Handle the checkout.session.completed event
+  if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    const userId = session.metadata?.userId; // assuming you pass userId in metadata
-    const creditsToAdd = parseInt(session.metadata?.credits) || 0;
 
     try {
+      // ✅ Fetch user from metadata
+      const userId = session.metadata.userId;
+      const creditsToAdd = parseInt(session.metadata.credits || 0);
+
       const user = await User.findById(userId);
-      if (user) {
-        user.credits += creditsToAdd;
-        await user.save();
-        console.log(`✅ Added ${creditsToAdd} credits to user ${user.email}`);
-      } else {
-        console.warn(`⚠️ User not found for ID: ${userId}`);
-      }
+      if (!user) throw new Error("User not found");
+
+      user.credits += creditsToAdd;
+      await user.save();
+
+      console.log(`✅ Credits updated for user ${user.email}: +${creditsToAdd}`);
     } catch (err) {
-      console.error("Error updating credits:", err);
+      console.error("❌ Failed to update credits:", err.message);
     }
   }
 
-  res.json({ received: true });
+  res.status(200).json({ received: true });
 };
+
+
 
 
